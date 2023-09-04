@@ -15,11 +15,11 @@ library(httr)
 library(rjson)
 ```
 
-## Read in The Lens aggregation API key and load Lens API helper function
+## Load The Lens aggregation API key and helper function
 
-Please first get an API key from The Lens and save the key under the 'LENS_KEY' variable in an .env file. More information on the API can be found here: https://docs.api.lens.org/aggregations-beta.html
+Get an API key from The Lens and save the key under the 'LENS_KEY' variable in an .env file. More information on the API can be found here: https://docs.api.lens.org/aggregations-beta.html
 
-Then, run code below to load in custom function for the calling The Lens API. I've stored the helper function code in the ''R" folder. It accepts four arguments (query_string, aggregration type, show_query_string and API token) and returns a dataframe of results. Query string refers to the Lens query string which is built from different components and are taken from the various excel file columns. There are 5 aggregation types in the helper function that provide different counts (license, oa status or oa colour as an aggregrated count or counts per year for plotting time series):
+Then, run code below to load in custom function for the calling The Lens API. The helper function accepts four arguments (query_string, aggregration type, show_query_string and API token) and returns a dataframe of results. 'query_string' refers to the Lens query string and is taken from the various excel file columns. There are 5 aggregation types in the helper function that provide different counts (license, oa status or oa colour as an aggregrated count or counts per year for plotting time series):
 
 -   "license_agg" - returns the different license type counts (up to 20 license categories)
 
@@ -33,8 +33,10 @@ Then, run code below to load in custom function for the calling The Lens API. I'
 
 -   "journal_oa_status_agg" - returns the top 20 journals for that query split by oa access status
 
+The 'token' argument accepts the API token from The Lens. The 'show_query_string' accepts a TRUE/FALSE argument and can be used to print the query string when running the script.
+
 ```{r}
-# Read in the env file data to get API token. API token need to be requested from The Lens
+# Read in the env file containing the API token. API token need to be requested from The Lens
 readRenviron(".env")
 token <- Sys.getenv("LENS_KEY")
 
@@ -79,10 +81,9 @@ oa_colour_data <- readxl::read_xlsx(here("Query doc.xlsx"), sheet ="queries_agg_
   clean_names() %>%
   filter(!is.na(query_string)) %>%
   rowwise() %>%
-  # Get the oa_colours firtst
+  # Get the oa_colours
   mutate(new_cols = list(aggregration_query(query_string = query_string, "oa_color_agg", token) %>% pluck('aggregations', 'pubtype'))) %>%
   unnest_wider(new_cols) %>%
-  # unnest again to flatten OA color category lists
   unnest(c(gold, hybrid, bronze, green, unknown)) %>%
     mutate(across(c(gold, hybrid, bronze, green, unknown), as.numeric)) %>%  
   rowwise() %>%
@@ -109,7 +110,6 @@ trend_data <- readxl::read_xlsx(here("Query doc.xlsx"), sheet ="queries_pharma_u
 oa_plus_oa_colour_trend <- trend_data %>%
   filter(analysis_type == "oa_status_plus_colour") %>%
   rowwise() %>%
-  # Get the oa_colours firtst
   mutate(new_cols = list(aggregration_query(query_string, "oa_color_over_time", token) %>% pluck('aggregations', 'date_histo') %>%
     enframe() %>%
     unnest_wider(value) %>%
@@ -151,9 +151,8 @@ write_csv(oa_TA_trend, here("output", "pharma-uni-queries-oa-plus-colour-trend-t
 oa_TA_counts <- oa_TA_trend %>%
   group_by(query_name) %>%
   summarise(total_all_years = sum(total))
+
 write_csv(oa_TA_counts, here("output", "pharma-uni-queries-therapy-areas-api-total-counts-results.csv"))
-
-
 ```
 
 ## Top journals OA counts (10 years)
@@ -175,7 +174,7 @@ write_csv(top_journal_by_TA, here("output", "pharma-uni-queries-therapy-areas-ap
 
 ## Top journals and aggregated counts - primary analysis (12-24 months)
 
-Journal and aggregated counts but with 12-24 months timeframe. Run queries listed in the 'queries_TA_pharma_uni_12_24m' tab in the Query doc.xlsx file.
+Journal and aggregated counts but with 12-24 months timeframe. Run queries listed in the 'queries_TA_pharma_uni_12_24m' tab in the 'Query doc.xlsx' file.
 
 ```{r}
 top_journal_by_TA_12_24m  <- readxl::read_xlsx(here("Query doc.xlsx"), sheet ="queries_TA_pharma_uni_12_24m") %>%

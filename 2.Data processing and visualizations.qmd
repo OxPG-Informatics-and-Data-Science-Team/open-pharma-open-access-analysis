@@ -1,0 +1,285 @@
+---
+title: "Processing data and visualizations"
+format: html
+editor: visual
+---
+
+Import libraries
+
+```{r}
+library(tidyverse)
+library(here)
+library(janitor)
+library(scales)
+library(stringr)
+library(ggstream)
+library(trend)
+```
+
+```{r}
+# Set theme for plots (very minimal)
+theme_set(theme_bw(base_size = 12))
+theme_update(
+  axis.line = element_line(colour = "black"),
+  axis.ticks = element_line(colour = "black"),
+  axis.text = element_text(color = "black"),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank(),
+  plot.title = element_text(face = "bold", margin = margin(5, 0, 10, 0)),
+  plot.title.position = "plot",
+  plot.margin = margin(rep(15, 4)),
+  legend.title= element_blank(),
+  legend.position = "bottom",
+  strip.background = element_rect(colour = NA, fill = NA),
+  strip.text = element_text(face = "bold", hjust = 0)
+)
+
+```
+
+# Open access status
+
+## Open access trends publications (10 years)
+
+```{r}
+# Pharma OA lineplot
+pharma_oa_trend <-  read_csv("output/pharma-uni-queries-oa-plus-colour-trend-api-results.csv") %>%
+    filter(group == "Pharma")
+  
+pharma_oa_chart <- pharma_oa_trend %>% 
+  pivot_longer(c(oa,`non-oa`), names_to = "open_access", values_to = "doc_count") %>% 
+  ggplot(aes(x=year, y=doc_count, colour=open_access)) + 
+  geom_line() +
+  geom_point() +
+  scale_x_continuous(breaks = 2013:2023) +
+  scale_y_continuous(labels = scales::comma, limits = c(0,15000)) +
+  labs(x = "Publication year",
+       y = "Number of publications")
+
+ggsave(here("output", "figures", "pharma_oa_trend.svg"),pharma_oa_chart, width = 7, height= 7)
+  
+  
+# Uni OA lineplot  
+uni_oa_trend <-  read_csv("output/pharma-uni-queries-oa-plus-colour-trend-api-results.csv") %>%
+    filter(group == "Uni")
+  
+uni_oa_chart <- uni_oa_trend %>% 
+  pivot_longer(c(oa,`non-oa`), names_to = "open_access", values_to = "doc_count") %>% 
+  ggplot(aes(x=year, y=doc_count, colour=open_access)) + 
+  geom_line() +
+  geom_point() +
+  scale_x_continuous(breaks = 2013:2023) +
+  scale_y_continuous(labels = scales::comma, limits = c(0,150000)) +
+  labs(x = "Publication year",
+       y = "Number of publications")
+
+ggsave(here("output","figures", "uni_oa_trend.svg"),uni_oa_chart, width = 7, height= 7)
+  
+
+```
+
+## Open access therapy area trends over time (10 years)
+
+```{r}
+# Plot facet plot for pharma and uni 
+all_facet <- read_csv("output/pharma-uni-queries-oa-plus-colour-trend-therapy-areas-api-results.csv") %>%
+  rowwise() %>%
+  mutate(therapy_area = paste0(therapy_area, "-",group)) %>%
+  rowwise() %>%
+  mutate(prct_oa = (oa/total)*100)
+
+# Line chart per therapy area (seperate charts per each therapy area)
+all_facet_plot_line <- all_facet %>%
+  ggplot(aes(x=year,y = prct_oa)) +
+  geom_line(color="#00BFC4") +
+  geom_point(color="#00BFC4") +
+  geom_text(aes(label=total), size = 4, vjust = -1) +
+  scale_x_continuous(breaks = seq(2013,2023, by = 2)) +
+  scale_y_continuous(labels = scales::comma, limits = (c(0, 100))) +
+  labs(x = "Publication year",
+       y = "% open access") +
+  facet_wrap( ~ therapy_area, ncol = 4, scales = "free")
+
+ggsave(here("output", "figures", "oa_status_facet_TA_line.svg"), all_facet_plot_line, width = 20, height= 30)
+
+
+# Combine both the pharma and uni together into a single chart per therapy area
+all_facet_data <- read_csv("output/pharma-uni-queries-oa-plus-colour-trend-therapy-areas-api-results.csv") %>%  
+  rowwise() %>%
+  mutate(prct_oa = (oa/total)*100)
+
+all_facet_combined_uni <- all_facet_data %>%
+  filter(group == "Uni") %>%
+  rename(total_uni = total)
+
+all_facet_combined_pharma <- all_facet_data %>%
+  filter(group == "Pharma") %>%
+  rename(total_pharma = total)
+
+# Combine Uni and Pharma data into a single dataset  
+all_facet_combined <- bind_rows(all_facet_combined_pharma, all_facet_combined_uni)
+
+# Plot lineplot 
+all_facet_plot_line_combined <- all_facet_combined %>%
+  ggplot(aes(x=year,y = prct_oa, colour=group)) +
+  geom_line() +
+  geom_point() +
+  geom_text(aes(label=total_pharma, group="Pharma"), size = 4, vjust = 9) +
+  geom_text(aes(label=total_uni, group="Uni"), size = 4, vjust = -8) +
+  scale_x_continuous(breaks = seq(2013,2023, by = 2)) +
+  scale_y_continuous(labels = scales::comma, limits = (c(0, 100))) +
+  labs(x = "Publication year",
+       y = "% open access") +
+  facet_wrap( ~ therapy_area, ncol = 2, scales = "free")
+
+ggsave(here("output", "figures", "oa_status_facet_TA_line_combined.svg"), all_facet_plot_line_combined, width = 20, height= 30)
+```
+
+# Open access colour
+
+## Open access colour percentages for primary (12-24m) and secondary analysis (12m)
+
+```{r}
+
+# Clean up the naming of the colours (sentence case) and group names (Uni to 'University' and 'pharma' to 'Pharma')
+oa_status_prim_sec_data <- read_csv("output/pharma-uni-queries-oa-status-agg-api-results.csv") %>%
+  rename("Non-OA" = "non-oa", "Bronze" = "bronze", "Gold" = "gold", "Green" = "green", "Hybrid" = "hybrid", "Unknown" = "unknown") %>%
+  mutate(group = case_when(
+    str_detect(group, "uni") ~ "University",
+    str_detect(group, "pharma") ~ "Pharma",
+               TRUE ~ group))
+
+# Calculate percentage of oa colours and also non-oa data for primary and secondary analytsis
+combined_oa_12m <- oa_status_prim_sec_data %>%
+  filter(comparison_group == "secondary (12m)") %>%
+  pivot_longer(Gold:`Non-OA`, names_to = "open_access_colour", values_to = "doc_count") %>%
+  mutate(percentage = (doc_count/total)*100)
+  
+combined_oa_24m <- oa_status_prim_sec_data %>%
+  filter(comparison_group == "primary (12m-24m)") %>%
+  pivot_longer(Gold:`Non-OA`, names_to = "open_access_colour", values_to = "doc_count") %>%
+  mutate(percentage = (doc_count/total)*100)
+
+
+# Plot stacked barcharts
+# Assign specific colors for OA categories
+cols <- c("Non-OA" = "#999999", "Bronze" = "#e7b58f", "Gold" = "#E69F00", "Green" = "#009E73", "Hybrid" = "#56B4E9", "Unknown" = "light blue")
+
+# Plot secondary analysis timeframe (12m) month graph 
+combined_oa_12m_plot <- combined_oa_12m %>%
+  # Convert to factor to reorder the stack according to predetermined order
+  mutate(open_access_colour = factor(open_access_colour, levels=c("Non-OA", "Bronze", "Gold", "Green","Hybrid", "Unknown"))) %>%
+  ggplot(aes(fill=open_access_colour, y=percentage, x=group, label=percentage)) +
+  geom_bar(position="stack", stat="identity") +
+  scale_y_continuous(limits=c(0,100)) +
+  geom_text(aes(label = paste0(round(percentage,0), "%")),
+    colour = "black", size = 4,position  = position_stack(vjust = .5)) +
+  scale_fill_manual(values = cols) +
+  labs(x = NULL,
+       y = "Percentage") +
+  coord_flip()
+
+ggsave(here("output", "figures", "oa_colour_12m.svg"),combined_oa_12m_plot, width = 7.29, height= 4.5)
+
+
+# Plot primary analysis timeframe (12-24m) month graph 
+combined_oa_24m_plot <- combined_oa_24m %>%
+  mutate(open_access_colour = factor(open_access_colour, levels=c("Non-OA", "Bronze", "Gold", "Green","Hybrid", "Unknown"))) %>%   
+  ggplot(aes(fill=open_access_colour, y=percentage, x=group, label=percentage)) +
+  geom_bar(position="stack", stat="identity") +
+  scale_y_continuous(limits=c(0,100)) +
+  geom_text(aes(label = paste0(round(percentage,0), "%")),
+    colour = "black", size = 4,position  = position_stack(vjust = .5)) +
+  scale_fill_manual(values = cols) +
+  labs(x = NULL,
+       y = "Percentage") +
+  coord_flip()
+
+ggsave(here("output", "figures", "oa_colour_24m.svg"),combined_oa_24m_plot, width = 8.29, height= 4.5)
+```
+
+# Open access colour trends over 10 years (stream graph)
+
+```{r}
+
+oa_trends <- read_csv("output/pharma-uni-queries-oa-plus-colour-trend-api-results.csv") %>%
+  # Cleanup column names and grouping names (Uni vs Pharma)
+  rename("Non-OA" = "non-oa", "Bronze" = "bronze", "Gold" = "gold", "Green" = "green", "Hybrid" = "hybrid", "Unknown" = "unknown") %>%
+  mutate(group = case_when(str_detect(group, "Uni") ~ "University", TRUE ~ group))
+
+# Pharma plot first
+pharma_stream_plot <- oa_trends %>%
+  filter(group == "Pharma") %>%
+  select(-oa) %>%
+  # Pivot data so it's easier to plot as stream graph
+  pivot_longer(Gold:`Non-OA`, names_to = "open_access", values_to = "doc_count") %>%
+  ggplot(aes(x = year, y = doc_count, fill = open_access)) +
+  geom_stream(bw = 1, type = "ridge",color = 1, lwd = 0.25) +
+  scale_x_continuous(breaks = seq(2013,2023, by = 2)) + 
+  scale_y_continuous(limits = c(0, 15000)) + 
+  scale_fill_manual(values = cols) +
+  labs(x="Publication year", y = "Number of publications")
+
+ggsave(here("output", "figures","pharma_oa_colour_trend_stream.svg"), pharma_stream_plot, width = 8.29, height= 4.5)
+
+
+# Uni stream plot 
+uni_stream_plot <- oa_trends %>%
+  filter(group == "University") %>%
+  select(-oa) %>%
+  pivot_longer(Gold:`Non-OA`, names_to = "open_access", values_to = "doc_count") %>%
+  ggplot(aes(x = year, y = doc_count, fill = open_access)) +
+  geom_stream(bw = 1, type = "ridge",color = 1, lwd = 0.25) +
+  scale_x_continuous(breaks = seq(2013,2023, by = 2)) + 
+  scale_y_continuous(limits = c(0, 200000)) + 
+  scale_fill_manual(values = cols) +
+  labs(x="Publication year", y = "Number of publications")
+
+ggsave(here("output", "figures", "uni_oa_colour_trend_stream.svg"), uni_stream_plot, width = 8.29, height= 4.5)
+```
+
+# Sen's slope calculation for determining trend
+
+An alternative to the raw counts is to calculate the increase in the percentage of OA over time. Because raw numbers aren't used, this might reduce the effect of the increase in publication counts.
+
+```{r}
+# Calculate percentge of OA, OA colour and OA therapy area trends over time and calculate slopes 
+all_pub_data <- read_csv("output/pharma-uni-queries-oa-plus-colour-trend-api-results.csv")
+
+# Percentage OA trends 
+oa_trend_prc <- all_pub_data %>%
+  rowwise() %>%
+  mutate(percentage_oa_of_total = (oa/total)*100) %>%
+  group_by(group) %>%
+  summarise(slope_oa_prc = sens.slope(percentage_oa_of_total)[["estimates"]][["Sen's slope"]])
+
+write_csv(oa_trend_prc, here("output", "slope-results", "sen-slope-overall-oa-percentage.csv"))
+
+
+# Percentage colour trends. Note that the percentage is based on total OA count not total publication count
+colour_trend_prc <- all_pub_data %>%
+  pivot_longer("gold":"unknown", names_to = "oa_col", values_to = "colour_counts") %>%
+  rowwise() %>%
+  mutate(percentage_colour_of_total_oa = (colour_counts/oa)*100) %>%
+  group_by(group, oa_col) %>%
+  summarise(slope_colour_prc = sens.slope(percentage_colour_of_total_oa)[["estimates"]][["Sen's slope"]])
+
+write_csv(colour_trend_prc, here("output", "slope-results", "sen-slope-overall-colour-percentage.csv"))
+
+# Percentage therapy area trends
+TA_trend_prc <-  read_csv("output/pharma-uni-queries-oa-plus-colour-trend-therapy-areas-api-results.csv") %>%
+  rowwise() %>%
+  mutate(percentage_oa_of_total = (oa/total)*100) %>%
+  group_by(group, therapy_area) %>%
+  summarise(slope_oa_TA_prc = sens.slope(percentage_oa_of_total)[["estimates"]][["Sen's slope"]])
+
+write_csv(TA_trend_prc, here("output", "slope-results", "sen-slope-therapy-area-oa-percentage.csv"))
+
+```
+
+# Session info
+
+```{r}
+sessionInfo()
+```

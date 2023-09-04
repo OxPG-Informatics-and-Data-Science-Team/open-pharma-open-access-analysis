@@ -1,4 +1,4 @@
-# This script contains the main function for calling Lens API
+# This script contains the helper function for calling Lens API
 library(httr)
 library(tidyverse)
 library(rjson)
@@ -33,7 +33,7 @@ aggregration_query <- function(query_string, aggregations_option, token, show_qu
     aggregations_string <- '{"journal": {"terms": {"field": "source.title.exact","size": 20,"aggregations": {"open_access_status": {"filters": {"filters": {"open_access": {"term": {"is_open_access": "true"}},"non-oa": {"term": {"is_open_access": "false"}}}}}}}}}'
   }
   else {
-    print("Wrong aggregations_option!!! Please use one of the following:license_agg, oa_status_agg, oa_color_agg, oa_color_over_time, oa_status_over_time")
+    print("Wrong aggregations_option! Please use one of the following:license_agg, oa_status_agg, oa_color_agg, oa_color_over_time, oa_status_over_time")
   }
   
   # We want to also have the option of showing the prompt if needed
