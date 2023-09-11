@@ -141,7 +141,6 @@ ggsave(here("output", "figures", "oa_status_facet_TA_line_combined.svg"), all_fa
 ## Open access colour percentages for primary (12-24m) and secondary analysis (12m)
 
 ```{r}
-
 # Clean up the naming of the colours (sentence case) and group names (Uni to 'University' and 'pharma' to 'Pharma')
 oa_status_prim_sec_data <- read_csv("output/pharma-uni-queries-oa-status-agg-api-results.csv") %>%
   rename("Non-OA" = "non-oa", "Bronze" = "bronze", "Gold" = "gold", "Green" = "green", "Hybrid" = "hybrid", "Unknown" = "unknown") %>%
@@ -199,7 +198,7 @@ combined_oa_24m_plot <- combined_oa_24m %>%
 ggsave(here("output", "figures", "oa_colour_24m.svg"),combined_oa_24m_plot, width = 8.29, height= 4.5)
 ```
 
-# Open access colour trends over 10 years (stream graph)
+# Open access colour trends over 10 years
 
 ```{r}
 
@@ -239,9 +238,7 @@ uni_stream_plot <- oa_trends %>%
 ggsave(here("output", "figures", "uni_oa_colour_trend_stream.svg"), uni_stream_plot, width = 8.29, height= 4.5)
 ```
 
-# Sen's slope calculation for determining trend
-
-An alternative to the raw counts is to calculate the increase in the percentage of OA over time. Because raw numbers aren't used, this might reduce the effect of the increase in publication counts.
+# Sen's slope calculation for determining trend (overall OA, colours and therapy areas)
 
 ```{r}
 # Calculate percentge of OA, OA colour and OA therapy area trends over time and calculate slopes 
@@ -256,7 +253,6 @@ oa_trend_prc <- all_pub_data %>%
 
 write_csv(oa_trend_prc, here("output", "slope-results", "sen-slope-overall-oa-percentage.csv"))
 
-
 # Percentage colour trends. Note that the percentage is based on total OA count not total publication count
 colour_trend_prc <- all_pub_data %>%
   pivot_longer("gold":"unknown", names_to = "oa_col", values_to = "colour_counts") %>%
@@ -268,13 +264,13 @@ colour_trend_prc <- all_pub_data %>%
 write_csv(colour_trend_prc, here("output", "slope-results", "sen-slope-overall-colour-percentage.csv"))
 
 # Percentage therapy area trends
-TA_trend_prc <-  read_csv("output/pharma-uni-queries-oa-plus-colour-trend-therapy-areas-api-results.csv") %>%
+ta_trend_prc <-  read_csv("output/pharma-uni-queries-oa-plus-colour-trend-therapy-areas-api-results.csv") %>%
   rowwise() %>%
   mutate(percentage_oa_of_total = (oa/total)*100) %>%
   group_by(group, therapy_area) %>%
   summarise(slope_oa_TA_prc = sens.slope(percentage_oa_of_total)[["estimates"]][["Sen's slope"]])
 
-write_csv(TA_trend_prc, here("output", "slope-results", "sen-slope-therapy-area-oa-percentage.csv"))
+write_csv(ta_trend_prc, here("output", "slope-results", "sen-slope-therapy-area-oa-percentage.csv"))
 
 ```
 

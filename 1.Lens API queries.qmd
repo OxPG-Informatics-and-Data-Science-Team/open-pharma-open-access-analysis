@@ -46,7 +46,7 @@ source(here("R","lens_api_function.R"))
 
 ## Aggregated total counts for pharma and uni
 
-Run queries listed in the 'pharma_queries_agg_all' and 'uni_queries_agg_all' tabs in the Query doc.xlsx file.
+Run queries listed in the 'pharma_queries_agg_all' and 'uni_queries_agg_all' tabs in the 'Query doc.xlsx' file.
 
 ```{r}
 # Read in pharma and uni queries and combine both
@@ -73,7 +73,7 @@ write_csv(combined_agg_data, here("output", "pharma-uni-queries-agg-api-results.
 
 ## Aggregated OA colour and OA status counts
 
-Run queries listed in the 'queries_agg_pharma_uni_oa_color' tab in the Query doc.xlsx file.
+Run queries listed in the 'queries_agg_pharma_uni_oa_color' tab in the 'Query doc.xlsx' file.
 
 ```{r}
 # Read in pharma and uni queries
@@ -98,7 +98,7 @@ write_csv(oa_colour_data, here("output", "pharma-uni-queries-oa-status-agg-api-r
 
 ## Trends over time counts for OA colour for university and pharma and individual therapy areas
 
-Run queries listed in the 'queries_pharma_uni_over_time' tab in the Query doc.xlsx file.
+Run queries listed in the 'queries_pharma_uni_over_time' tab in the 'Query doc.xlsx' file.
 
 ```{r}
 trend_data <- readxl::read_xlsx(here("Query doc.xlsx"), sheet ="queries_pharma_uni_over_time") %>%
