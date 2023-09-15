@@ -17,7 +17,7 @@ library(trend)
 ```
 
 ```{r}
-# Set theme for plots (very minimal)
+# Set theme for plots
 theme_set(theme_bw(base_size = 12))
 theme_update(
   axis.line = element_line(colour = "black"),
