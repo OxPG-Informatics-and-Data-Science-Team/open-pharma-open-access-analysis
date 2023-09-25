@@ -154,11 +154,12 @@ oa_TA_trend <- trend_data %>%
   unnest(c(gold, hybrid, bronze, green, unknown)) %>%  
   # In some cases, there are no counts for some categories
   mutate(across(c(gold, hybrid, bronze, green, unknown), as.character)) %>%
-  mutate(across(c(gold, hybrid, bronze, green, unknown), str_replace, 'NULL', '0')) %>%
+  mutate(across(c(gold, hybrid, bronze, green, unknown), ~ str_replace(.x, 'NULL', '0'))) %>%
   mutate(across(c(gold, hybrid, bronze, green, unknown), as.numeric)) %>%
   rowwise() %>%
   mutate(oa = sum(c(gold, hybrid, bronze, green, unknown)),
          `non-oa` = total - oa)
+
 
 write_csv(oa_TA_trend, here("output", "pharma-uni-queries-oa-plus-colour-trend-therapy-areas-api-results.csv"))
 
