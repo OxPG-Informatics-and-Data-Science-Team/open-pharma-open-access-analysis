@@ -4,6 +4,21 @@ format: html
 editor: visual
 ---
 
+Check for packages that are needed and install them if missing
+
+```{r}
+# Package names
+packages <- c("tidyverse", "here", "janitor", "glue", "httr", "rjson")
+
+# Install packages not yet installed
+installed_packages <- packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+```
+
+Load libraries
+
 ```{r}
 # Packages for data wrangling
 library(tidyverse)
