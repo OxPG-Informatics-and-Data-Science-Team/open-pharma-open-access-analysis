@@ -32,7 +32,7 @@ library(rjson)
 
 ## Load The Lens aggregation API key and helper function
 
-Get an API key from The Lens and save the key under the 'LENS_KEY' variable in an .env file. More information on the API can be found here: https://docs.api.lens.org/aggregations-beta.html
+Get an API key from The Lens and save the key under the 'LENS_KEY' variable in an .env file. More information on the API can be found here: https://docs.api.lens.org/aggregations.html
 
 Then, run code below to load in custom function for the calling The Lens API. The helper function accepts four arguments (query_string, aggregration type, show_query_string and API token) and returns a dataframe of results. 'query_string' refers to the Lens query string and is taken from the various excel file columns. There are 5 aggregation types in the helper function that provide different counts (license, oa status or oa colour as an aggregrated count or counts per year for plotting time series):
 
