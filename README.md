@@ -13,3 +13,5 @@ Data for the analysis are collected directly from The Lens using the Aggregratio
   
 ### Data processing
 * The R code in the '2.Data processing and visualizations.qmd' file can be used to preprocess the output from the API requests, create basic visualizations and calculate open access trends.
+
+Example results are shown in the 'sample output' folder.
