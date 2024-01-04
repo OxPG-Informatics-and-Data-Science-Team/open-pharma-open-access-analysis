@@ -1,0 +1,1 @@
+Output from The Lens API queries are saved as csv files in this folder

@@ -1,0 +1,1 @@
+Calculated Sen slope values are stored as csv files in this folder

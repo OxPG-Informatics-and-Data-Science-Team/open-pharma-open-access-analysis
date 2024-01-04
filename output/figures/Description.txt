@@ -1,0 +1,1 @@
+Plots generated from running the R code are stored as .svg files in this folder
